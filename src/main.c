@@ -313,22 +313,14 @@ int main(void) {
 
 	//Establece la radio en modo de recepcion durante un tiempo
 	Radio.Rx( RX_TIMEOUT_VALUE);
-	HAL_UART_Receive_DMA(&huart1,buffVariscite, 10);
 
 	while (1) {
-		PRINTF("Buffer: %s\r\n", buffVariscite);
-		HAL_UART_Transmit_DMA(&huart1,ReadyMsg, strlen(ReadyMsg));
-		DelayMs(1000);
 
-//		HAL_UART_Receive_IT(&huart1,buffVariscite, 10);
-//		PRINTF("Buffer: %s\r\n", buffVariscite);
-//		HAL_UART_Transmit_IT(&huart1,ReadyMsg, strlen(ReadyMsg));
-//		DelayMs(1000);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+		if (HAL_SPI_TransmitReceive(&hspi2, (uint8_t*) ReadyMsg, (uint8_t *) RxReady, 5, 3000) == HAL_OK) {
+			PRINTF("%s\r\n", RxReady);	}
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 
-//		HAL_UART_Receive(&huart1,buffVariscite, 10, 1000);
-//		PRINTF("Buffer: %s\r\n", buffVariscite);
-//		HAL_UART_Transmit(&huart1,ReadyMsg, strlen(ReadyMsg), 1000);
-//		DelayMs(500);
 
 //		switch (State) {
 //		case RX:
