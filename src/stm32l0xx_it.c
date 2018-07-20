@@ -202,10 +202,27 @@ void SysTick_Handler(void)
 {
 }*/
 extern SPI_HandleTypeDef hspi2;
+extern UART_HandleTypeDef huart1;
+extern DMA_HandleTypeDef hdma_usart1_rx;
+extern DMA_HandleTypeDef hdma_usart1_tx;
 
 void SPI2_IRQHandler(void)
 {
   HAL_SPI_IRQHandler(&hspi2);
+}
+
+void USART1_IRQHandler(void)
+{
+  HAL_UART_IRQHandler(&huart1);
+}
+
+/**
+* @brief This function handles DMA1 channel 2 and channel 3 interrupts.
+*/
+void DMA1_Channel2_3_IRQHandler(void)
+{
+  HAL_DMA_IRQHandler(&hdma_usart1_tx);
+  HAL_DMA_IRQHandler(&hdma_usart1_rx);
 }
 
 void USART2_IRQHandler( void )

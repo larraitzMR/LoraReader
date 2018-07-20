@@ -13,6 +13,7 @@
 #include "version.h"
 #include "gps.h"
 #include "display.h"
+#include "uart.h"
 
 /** Lora **/
 /*!
@@ -220,6 +221,7 @@ uint8_t Buffer[BUFFER_SIZE];
 
 
 extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart2;
 
 int recibidoMaster = 0;
 int recibidoSlave = 0;
@@ -236,6 +238,7 @@ char latC[1];
 char lon[10];
 char lonC[1];
 char buffGPS[40];
+char buffVariscite[0];
 char* a;
 char ReadyID[6];
 
@@ -269,6 +272,9 @@ int main(void) {
 
 	SPI_Config();
 	SPI_Init();
+
+	UART_Config();
+	UART1_Init();
 
 	/* Configure the Lora Stack*/
 	lora_Init(&LoRaMainCallbacks, &LoRaParamInit);
@@ -307,117 +313,92 @@ int main(void) {
 
 	//Establece la radio en modo de recepcion durante un tiempo
 	Radio.Rx( RX_TIMEOUT_VALUE);
-
-	/* Master */
-	bool isMaster = true;
-
-	ID = 0;
-	sprintf(IDLora,"%d", ID);
-	IDSlave = ID+1;
-	sprintf(IDSlaveLora,"%d", IDSlave);
+	HAL_UART_Receive_DMA(&huart1,buffVariscite, 10);
 
 	while (1) {
-		if (recibidoReady == 0) {
-			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-			if (HAL_SPI_TransmitReceive(&hspi2, (uint8_t*) ReadyMsg, (uint8_t *) RxReady, 5, 3000) == HAL_OK) {
-				while (HAL_SPI_GetState(&hspi2) != HAL_SPI_STATE_READY) {
-				}
-				PRINTF("%s\r\n", RxReady);
-				if (strncmp((const char*) RxReady, (const char*) ReadyMsg, 5) == 0) {
-					recibidoReady = 1;
-					PRINTF("Recibido Ready\r\n");
-				}
-			}
-			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
-		} else if (recibidoReady == 1) {
-			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-			if (HAL_SPI_TransmitReceive(&hspi2, (uint8_t*) OKMsg, (uint8_t *) parsingBuff, 40, 3000) == HAL_OK) {
-				while (HAL_SPI_GetState(&hspi2) != HAL_SPI_STATE_READY) {
-				}
-				PRINTF("%s\r\n", parsingBuff);
-				strcpy(misDat[i].datos, parsingBuff);
+		PRINTF("Buffer: %s\r\n", buffVariscite);
+		HAL_UART_Transmit_DMA(&huart1,ReadyMsg, strlen(ReadyMsg));
+		DelayMs(1000);
 
-				if (strncmp((const char*) parsingBuff, (const char*) "GPS", 3)	== 0) {
-					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
-					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-					if (HAL_SPI_TransmitReceive(&hspi2, (uint8_t*) parsingBuff,(uint8_t *) OKMsg, 40, 3000) == HAL_OK) {
-						while (HAL_SPI_GetState(&hspi2) != HAL_SPI_STATE_READY) {
-						}
-					}
-				}
-			}
-			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
-		}
+//		HAL_UART_Receive_IT(&huart1,buffVariscite, 10);
+//		PRINTF("Buffer: %s\r\n", buffVariscite);
+//		HAL_UART_Transmit_IT(&huart1,ReadyMsg, strlen(ReadyMsg));
+//		DelayMs(1000);
 
-		switch (State) {
-		case RX:
-			if (isMaster == true) {
-				if (BufferSize > 0) {
-					PRINTF(" Master: %s\r\n", Buffer);
-					if ((strncmp((const char*) Buffer, (const char*) ReadyMsg, 5) == 0) && Buffer[5] == IDSlaveLora[0]) {
-						enviadoReady = 1;
-						DelayMs(1);
-						Radio.Send(misDat[i].datos, BUFFERSIZE);
-						Radio.Rx( RX_TIMEOUT_VALUE);
-						recibidoMaster = 1;
-						errorReady = 1;
-					}
-					if ((recibidoMaster == 1) && (strncmp((const char*) Buffer,(const char*) OKMsg, 2) == 0) && Buffer[2] == IDSlaveLora[0]) {
-						DelayMs(1);
-						Radio.Send(misDat[i].datos, BUFFERSIZE);
-						Radio.Rx( RX_TIMEOUT_VALUE);
-					}
-					Radio.Rx( RX_TIMEOUT_VALUE);
-					memset(Buffer, '\0', BUFFER_SIZE);
-				}
-			}
-			State = LOWPOWER;
-			break;
-		case TX:
-			Radio.Rx( RX_TIMEOUT_VALUE);
-			State = LOWPOWER;
-			break;
-		case RX_TIMEOUT:
-		case RX_ERROR:
-			if (isMaster == true) {
-				if (enviadoReady == 0) {
-					sprintf(ReadyID, "%s%d", ReadyMsg, ID);
-					Radio.Send(ReadyID, 6);
-					PRINTF("Master Ready\r\n");
-				}
-				if (errorReady == 1) {
-					Radio.Send(misDat[i].datos, BUFFERSIZE);
-				}
-				// Send the next PING frame
-				DelayMs(1);
-				Radio.Rx( RX_TIMEOUT_VALUE);
-			} else {
-				Radio.Rx( RX_TIMEOUT_VALUE);
-			}
-			State = LOWPOWER;
-			break;
-		case TX_TIMEOUT:
-			Radio.Rx( RX_TIMEOUT_VALUE);
-			break;
-		case LOWPOWER:
-		default:
-			// Set low power
-			break;
-		}
-		i++;
-		if (i == 149){
-			i = 0;
-		}
+//		HAL_UART_Receive(&huart1,buffVariscite, 10, 1000);
+//		PRINTF("Buffer: %s\r\n", buffVariscite);
+//		HAL_UART_Transmit(&huart1,ReadyMsg, strlen(ReadyMsg), 1000);
+//		DelayMs(500);
 
-		DISABLE_IRQ( );
-		/* if an interupt has occured after __disable_irq, it is kept pending
-		 * and cortex will not enter low power anyway  */
-		if (State == LOWPOWER) {
-#ifndef LOW_POWER_DISABLE
-			LowPower_Handler();
-#endif
-		}
-		ENABLE_IRQ( );
+//		switch (State) {
+//		case RX:
+//			if (isMaster == true) {
+//				if (BufferSize > 0) {
+//					PRINTF(" Master: %s\r\n", Buffer);
+//					if ((strncmp((const char*) Buffer, (const char*) ReadyMsg, 5) == 0) && Buffer[5] == IDSlaveLora[0]) {
+//						enviadoReady = 1;
+//						DelayMs(1);
+//						Radio.Send(misDat[i].datos, BUFFERSIZE);
+//						Radio.Rx( RX_TIMEOUT_VALUE);
+//						recibidoMaster = 1;
+//						errorReady = 1;
+//					}
+//					if ((recibidoMaster == 1) && (strncmp((const char*) Buffer,(const char*) OKMsg, 2) == 0) && Buffer[2] == IDSlaveLora[0]) {
+//						DelayMs(1);
+//						Radio.Send(misDat[i].datos, BUFFERSIZE);
+//						Radio.Rx( RX_TIMEOUT_VALUE);
+//					}
+//					Radio.Rx( RX_TIMEOUT_VALUE);
+//					memset(Buffer, '\0', BUFFER_SIZE);
+//				}
+//			}
+//			State = LOWPOWER;
+//			break;
+//		case TX:
+//			Radio.Rx( RX_TIMEOUT_VALUE);
+//			State = LOWPOWER;
+//			break;
+//		case RX_TIMEOUT:
+//		case RX_ERROR:
+//			if (isMaster == true) {
+//				if (enviadoReady == 0) {
+//					sprintf(ReadyID, "%s%d", ReadyMsg, ID);
+//					Radio.Send(ReadyID, 6);
+//					PRINTF("Master Ready\r\n");
+//				}
+//				if (errorReady == 1) {
+//					Radio.Send(misDat[i].datos, BUFFERSIZE);
+//				}
+//				// Send the next PING frame
+//				DelayMs(1);
+//				Radio.Rx( RX_TIMEOUT_VALUE);
+//			} else {
+//				Radio.Rx( RX_TIMEOUT_VALUE);
+//			}
+//			State = LOWPOWER;
+//			break;
+//		case TX_TIMEOUT:
+//			Radio.Rx( RX_TIMEOUT_VALUE);
+//			break;
+//		case LOWPOWER:
+//		default:
+//			// Set low power
+//			break;
+//		}
+//		i++;
+//		if (i == 149){
+//			i = 0;
+//		}
+//
+//		DISABLE_IRQ( );
+//		/* if an interupt has occured after __disable_irq, it is kept pending
+//		 * and cortex will not enter low power anyway  */
+//		if (State == LOWPOWER) {
+//#ifndef LOW_POWER_DISABLE
+//			LowPower_Handler();
+//#endif
+//		}
+//		ENABLE_IRQ( );
 	}
 }
 

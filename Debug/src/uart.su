@@ -1,2 +1,4 @@
-uart.c:13:6:UART_Config	32	static
-uart.c:40:6:UART2_Init	8	static
+uart.c:16:6:UART_Config	32	static
+uart.c:92:6:UART1_Init	8	static
+uart.c:113:6:HAL_UART_TxCpltCallback	16	static
+uart.c:128:6:HAL_UART_RxCpltCallback	16	static
