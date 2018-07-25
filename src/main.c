@@ -208,7 +208,7 @@ uint8_t aTxBuffer[] =" ";
 
 /* Buffer used for reception */
 uint8_t buffLora[40];
-uint8_t EPC[24];
+uint8_t EPC[26];
 uint8_t parsingBuff[BUFFERSIZE];
 
 const uint8_t PingMsg[] = "PING";
@@ -318,11 +318,14 @@ int main(void) {
 
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
 //		if (HAL_SPI_TransmitReceive(&hspi2, (uint8_t*) ReadyMsg, (uint8_t *) EPC, 24, 3000) == HAL_OK) {
-		if (HAL_SPI_Receive(&hspi2, (uint8_t *) EPC, 24, 750) == HAL_OK) {
+		if (HAL_SPI_Receive(&hspi2, (uint8_t *) EPC, 26, 500) == HAL_OK) {
+//		if (HAL_SPI_Receive_IT(&hspi2, (uint8_t *) EPC, 24) == HAL_OK) {
 			PRINTF("%s\r\n", EPC);
+//			memset(EPC, '\0', EPC);
+			bzero(EPC, sizeof(EPC));
 		}
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
-		bzero(EPC, sizeof(EPC));
+
 
 
 //		switch (State) {
