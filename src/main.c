@@ -208,7 +208,7 @@ uint8_t aTxBuffer[] =" ";
 
 /* Buffer used for reception */
 uint8_t buffLora[40];
-uint8_t EPC[26];
+uint8_t EPC[24];
 uint8_t parsingBuff[BUFFERSIZE];
 
 const uint8_t PingMsg[] = "PING";
@@ -314,89 +314,97 @@ int main(void) {
 	//Establece la radio en modo de recepcion durante un tiempo
 	Radio.Rx( RX_TIMEOUT_VALUE);
 
+	/* Master */
+	bool isMaster = true;
+
+	ID = 0;
+	sprintf(IDLora,"%d", ID);
+	IDSlave = ID+1;
+	sprintf(IDSlaveLora,"%d", IDSlave);
+
 	while (1) {
 
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
 //		if (HAL_SPI_TransmitReceive(&hspi2, (uint8_t*) ReadyMsg, (uint8_t *) EPC, 24, 3000) == HAL_OK) {
-		if (HAL_SPI_Receive(&hspi2, (uint8_t *) EPC, 26, 500) == HAL_OK) {
+		if (HAL_SPI_Receive(&hspi2, (uint8_t *) EPC, 24, 500) == HAL_OK) {
 //		if (HAL_SPI_Receive_IT(&hspi2, (uint8_t *) EPC, 24) == HAL_OK) {
+			while (HAL_SPI_GetState(&hspi2) != HAL_SPI_STATE_READY) {}
 			PRINTF("%s\r\n", EPC);
+			strcpy(misDat[i].datos, EPC);
 //			memset(EPC, '\0', EPC);
 			bzero(EPC, sizeof(EPC));
 		}
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 
+		switch (State) {
+		case RX:
+			if (isMaster == true) {
+				if (BufferSize > 0) {
+					PRINTF(" Master: %s\r\n", Buffer);
+					if ((strncmp((const char*) Buffer, (const char*) ReadyMsg, 5) == 0) && Buffer[5] == IDSlaveLora[0]) {
+						enviadoReady = 1;
+						DelayMs(1);
+						Radio.Send(misDat[i].datos, 24);
+						Radio.Rx( RX_TIMEOUT_VALUE);
+						recibidoMaster = 1;
+						errorReady = 1;
+					}
+					if ((recibidoMaster == 1) && (strncmp((const char*) Buffer,(const char*) OKMsg, 2) == 0) && Buffer[2] == IDSlaveLora[0]) {
+						DelayMs(1);
+						Radio.Send(misDat[i].datos, 24);
+						Radio.Rx( RX_TIMEOUT_VALUE);
+					}
+					Radio.Rx( RX_TIMEOUT_VALUE);
+					memset(Buffer, '\0', BUFFER_SIZE);
+				}
+			}
+			State = LOWPOWER;
+			break;
+		case TX:
+			Radio.Rx( RX_TIMEOUT_VALUE);
+			State = LOWPOWER;
+			break;
+		case RX_TIMEOUT:
+		case RX_ERROR:
+			if (isMaster == true) {
+				if (enviadoReady == 0) {
+					sprintf(ReadyID, "%s%d", ReadyMsg, ID);
+					Radio.Send(ReadyID, 6);
+					//PRINTF("Master Ready\r\n");
+				}
+				if (errorReady == 1) {
+					Radio.Send(misDat[i].datos, 24);
+				}
+				// Send the next PING frame
+				DelayMs(1);
+				Radio.Rx( RX_TIMEOUT_VALUE);
+			} else {
+				Radio.Rx( RX_TIMEOUT_VALUE);
+			}
+			State = LOWPOWER;
+			break;
+		case TX_TIMEOUT:
+			Radio.Rx( RX_TIMEOUT_VALUE);
+			break;
+		case LOWPOWER:
+		default:
+			// Set low power
+			break;
+		}
+		i++;
+		if (i == 149){
+			i = 0;
+		}
 
-
-//		switch (State) {
-//		case RX:
-//			if (isMaster == true) {
-//				if (BufferSize > 0) {
-//					PRINTF(" Master: %s\r\n", Buffer);
-//					if ((strncmp((const char*) Buffer, (const char*) ReadyMsg, 5) == 0) && Buffer[5] == IDSlaveLora[0]) {
-//						enviadoReady = 1;
-//						DelayMs(1);
-//						Radio.Send(misDat[i].datos, BUFFERSIZE);
-//						Radio.Rx( RX_TIMEOUT_VALUE);
-//						recibidoMaster = 1;
-//						errorReady = 1;
-//					}
-//					if ((recibidoMaster == 1) && (strncmp((const char*) Buffer,(const char*) OKMsg, 2) == 0) && Buffer[2] == IDSlaveLora[0]) {
-//						DelayMs(1);
-//						Radio.Send(misDat[i].datos, BUFFERSIZE);
-//						Radio.Rx( RX_TIMEOUT_VALUE);
-//					}
-//					Radio.Rx( RX_TIMEOUT_VALUE);
-//					memset(Buffer, '\0', BUFFER_SIZE);
-//				}
-//			}
-//			State = LOWPOWER;
-//			break;
-//		case TX:
-//			Radio.Rx( RX_TIMEOUT_VALUE);
-//			State = LOWPOWER;
-//			break;
-//		case RX_TIMEOUT:
-//		case RX_ERROR:
-//			if (isMaster == true) {
-//				if (enviadoReady == 0) {
-//					sprintf(ReadyID, "%s%d", ReadyMsg, ID);
-//					Radio.Send(ReadyID, 6);
-//					PRINTF("Master Ready\r\n");
-//				}
-//				if (errorReady == 1) {
-//					Radio.Send(misDat[i].datos, BUFFERSIZE);
-//				}
-//				// Send the next PING frame
-//				DelayMs(1);
-//				Radio.Rx( RX_TIMEOUT_VALUE);
-//			} else {
-//				Radio.Rx( RX_TIMEOUT_VALUE);
-//			}
-//			State = LOWPOWER;
-//			break;
-//		case TX_TIMEOUT:
-//			Radio.Rx( RX_TIMEOUT_VALUE);
-//			break;
-//		case LOWPOWER:
-//		default:
-//			// Set low power
-//			break;
-//		}
-//		i++;
-//		if (i == 149){
-//			i = 0;
-//		}
-//
-//		DISABLE_IRQ( );
-//		/* if an interupt has occured after __disable_irq, it is kept pending
-//		 * and cortex will not enter low power anyway  */
-//		if (State == LOWPOWER) {
-//#ifndef LOW_POWER_DISABLE
-//			LowPower_Handler();
-//#endif
-//		}
-//		ENABLE_IRQ( );
+		DISABLE_IRQ( );
+		/* if an interupt has occured after __disable_irq, it is kept pending
+		 * and cortex will not enter low power anyway  */
+		if (State == LOWPOWER) {
+#ifndef LOW_POWER_DISABLE
+			LowPower_Handler();
+#endif
+		}
+		ENABLE_IRQ( );
 	}
 }
 
