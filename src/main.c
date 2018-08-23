@@ -322,75 +322,89 @@ int main(void) {
 	IDSlave = ID+1;
 	sprintf(IDSlaveLora,"%d", IDSlave);
 
+	int cont = 0;
+
 	while (1) {
 
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
 //		if (HAL_SPI_TransmitReceive(&hspi2, (uint8_t*) ReadyMsg, (uint8_t *) EPC, 24, 3000) == HAL_OK) {
-		if (HAL_SPI_Receive(&hspi2, (uint8_t *) EPC, 24, 500) == HAL_OK) {
+		if (HAL_SPI_Receive(&hspi2, (uint8_t *) EPC, 24, 1000) == HAL_OK) {
 //		if (HAL_SPI_Receive_IT(&hspi2, (uint8_t *) EPC, 24) == HAL_OK) {
 			while (HAL_SPI_GetState(&hspi2) != HAL_SPI_STATE_READY) {}
 			PRINTF("%s\r\n", EPC);
+			PRINTF("%d\r\n", i);
 			strcpy(misDat[i].datos, EPC);
 //			memset(EPC, '\0', EPC);
-			bzero(EPC, sizeof(EPC));
+			PRINTF("LISTO\r\n", i);
 		}
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 
-		switch (State) {
-		case RX:
-			if (isMaster == true) {
-				if (BufferSize > 0) {
-					PRINTF(" Master: %s\r\n", Buffer);
-					if ((strncmp((const char*) Buffer, (const char*) ReadyMsg, 5) == 0) && Buffer[5] == IDSlaveLora[0]) {
-						enviadoReady = 1;
-						DelayMs(1);
-						Radio.Send(misDat[i].datos, 24);
-						Radio.Rx( RX_TIMEOUT_VALUE);
-						recibidoMaster = 1;
-						errorReady = 1;
-					}
-					if ((recibidoMaster == 1) && (strncmp((const char*) Buffer,(const char*) OKMsg, 2) == 0) && Buffer[2] == IDSlaveLora[0]) {
-						DelayMs(1);
-						Radio.Send(misDat[i].datos, 24);
-						Radio.Rx( RX_TIMEOUT_VALUE);
-					}
-					Radio.Rx( RX_TIMEOUT_VALUE);
-					memset(Buffer, '\0', BUFFER_SIZE);
-				}
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+//		if (HAL_SPI_Transmit(&hspi2, misDat[i].datos, 24, 2000) == HAL_OK) {
+		if (HAL_SPI_Transmit(&hspi2, ReadyMsg, 5, 1000) == HAL_OK) {
+			while (HAL_SPI_GetState(&hspi2) != HAL_SPI_STATE_READY) {
 			}
-			State = LOWPOWER;
-			break;
-		case TX:
-			Radio.Rx( RX_TIMEOUT_VALUE);
-			State = LOWPOWER;
-			break;
-		case RX_TIMEOUT:
-		case RX_ERROR:
-			if (isMaster == true) {
-				if (enviadoReady == 0) {
-					sprintf(ReadyID, "%s%d", ReadyMsg, ID);
-					Radio.Send(ReadyID, 6);
-					//PRINTF("Master Ready\r\n");
-				}
-				if (errorReady == 1) {
-					Radio.Send(misDat[i].datos, 24);
-				}
-				// Send the next PING frame
-				DelayMs(1);
-				Radio.Rx( RX_TIMEOUT_VALUE);
-			} else {
-				Radio.Rx( RX_TIMEOUT_VALUE);
-			}
-			State = LOWPOWER;
-			break;
-		case TX_TIMEOUT:
-			Radio.Rx( RX_TIMEOUT_VALUE);
-			break;
-		case LOWPOWER:
-		default:
-			// Set low power
-			break;
+			PRINTF("Enviado %s\r\n", misDat[i].datos);
+			cont = 0;
 		}
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+		bzero(EPC, sizeof(EPC));
+
+//		switch (State) {
+//		case RX:
+//			if (isMaster == true) {
+//				if (BufferSize > 0) {
+//					PRINTF(" Master: %s\r\n", Buffer);
+//					if ((strncmp((const char*) Buffer, (const char*) ReadyMsg, 5) == 0) && Buffer[5] == IDSlaveLora[0]) {
+//						enviadoReady = 1;
+//						DelayMs(1);
+//						Radio.Send(misDat[i].datos, 24);
+//						Radio.Rx( RX_TIMEOUT_VALUE);
+//						recibidoMaster = 1;
+//						errorReady = 1;
+//					}
+//					if ((recibidoMaster == 1) && (strncmp((const char*) Buffer,(const char*) OKMsg, 2) == 0) && Buffer[2] == IDSlaveLora[0]) {
+//						DelayMs(1);
+//						Radio.Send(misDat[i].datos, 24);
+//						Radio.Rx( RX_TIMEOUT_VALUE);
+//					}
+//					Radio.Rx( RX_TIMEOUT_VALUE);
+//					memset(Buffer, '\0', BUFFER_SIZE);
+//				}
+//			}
+//			State = LOWPOWER;
+//			break;
+//		case TX:
+//			Radio.Rx( RX_TIMEOUT_VALUE);
+//			State = LOWPOWER;
+//			break;
+//		case RX_TIMEOUT:
+//		case RX_ERROR:
+//			if (isMaster == true) {
+//				if (enviadoReady == 0) {
+//					sprintf(ReadyID, "%s%d", ReadyMsg, ID);
+//					Radio.Send(ReadyID, 6);
+//					//PRINTF("Master Ready\r\n");
+//				}
+//				if (errorReady == 1) {
+//					Radio.Send(misDat[i].datos, 24);
+//				}
+//				// Send the next PING frame
+//				DelayMs(1);
+//				Radio.Rx( RX_TIMEOUT_VALUE);
+//			} else {
+//				Radio.Rx( RX_TIMEOUT_VALUE);
+//			}
+//			State = LOWPOWER;
+//			break;
+//		case TX_TIMEOUT:
+//			Radio.Rx( RX_TIMEOUT_VALUE);
+//			break;
+//		case LOWPOWER:
+//		default:
+//			// Set low power
+//			break;
+//		}
 		i++;
 		if (i == 149){
 			i = 0;
