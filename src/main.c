@@ -327,8 +327,8 @@ int main(void) {
 	while (1) {
 
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-//		if (HAL_SPI_TransmitReceive(&hspi2, misDat[i-1].datos, (uint8_t *) EPC, 24, 1000) == HAL_OK) {
-		if (HAL_SPI_Receive(&hspi2, (uint8_t *) EPC, 24, 1000) == HAL_OK) {
+		if (HAL_SPI_TransmitReceive(&hspi2, misDat[i-1].datos, (uint8_t *) EPC, 24, 1000) == HAL_OK) {
+//		if (HAL_SPI_Receive(&hspi2, (uint8_t *) EPC, 24, 1000) == HAL_OK) {
 //		if (HAL_SPI_Receive_IT(&hspi2, (uint8_t *) EPC, 24) == HAL_OK) {
 			while (HAL_SPI_GetState(&hspi2) != HAL_SPI_STATE_READY) {}
 			PRINTF("%s\r\n", EPC);
@@ -337,16 +337,16 @@ int main(void) {
 //			memset(EPC, '\0', EPC);
 			//PRINTF("LISTO\r\n", i);
 		}
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
-//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-		if (HAL_SPI_Transmit(&hspi2, misDat[i].datos, 24, 2000) == HAL_OK) {
-//		if (HAL_SPI_Transmit(&hspi2, ReadyMsg, 5, 1000) == HAL_OK) {
-//		if (HAL_SPI_TransmitReceive(&hspi2, ReadyMsg, "", 5, 1000) == HAL_OK) {
-			while (HAL_SPI_GetState(&hspi2) != HAL_SPI_STATE_READY) {
-			}
-			PRINTF("Enviado %s\r\n", ReadyMsg);
-			cont = 0;
-		}
+//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+////		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+//		if (HAL_SPI_Transmit(&hspi2, misDat[i].datos, 24, 2000) == HAL_OK) {
+////		if (HAL_SPI_Transmit(&hspi2, ReadyMsg, 5, 1000) == HAL_OK) {
+////		if (HAL_SPI_TransmitReceive(&hspi2, ReadyMsg, "", 5, 1000) == HAL_OK) {
+//			while (HAL_SPI_GetState(&hspi2) != HAL_SPI_STATE_READY) {
+//			}
+//			PRINTF("Enviado %s\r\n", ReadyMsg);
+//			cont = 0;
+//		}
 //		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 		bzero(EPC, sizeof(EPC));
 
