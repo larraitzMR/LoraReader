@@ -147,7 +147,6 @@ typedef enum {
                    LED_Off( LED_GREEN2 ) ; \
                    } while(0) ;
 
-
 States_t State = LOWPOWER;
 
 int8_t RssiValue = 0;
@@ -204,7 +203,7 @@ extern SPI_HandleTypeDef hspi2;
 /* Exported macro ------------------------------------------------------------*/
 #define COUNTOF(__BUFFER__)   (sizeof(__BUFFER__) / sizeof(*(__BUFFER__)))
 /* Buffer used for transmission */
-uint8_t aTxBuffer[] =" ";
+uint8_t aTxBuffer[] = " ";
 
 /* Buffer used for reception */
 uint8_t buffLora[40];
@@ -218,7 +217,6 @@ uint8_t OKMsg[2] = "OK";
 
 uint16_t BufferSize = BUFFER_SIZE;
 uint8_t Buffer[BUFFER_SIZE];
-
 
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
@@ -318,25 +316,42 @@ int main(void) {
 	bool isMaster = true;
 
 	ID = 0;
-	sprintf(IDLora,"%d", ID);
-	IDSlave = ID+1;
-	sprintf(IDSlaveLora,"%d", IDSlave);
+	sprintf(IDLora, "%d", ID);
+	IDSlave = ID + 1;
+	sprintf(IDSlaveLora, "%d", IDSlave);
 
 	int cont = 0;
 
 	while (1) {
 
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-		if (HAL_SPI_TransmitReceive(&hspi2, misDat[i-1].datos, (uint8_t *) EPC, 24, 1000) == HAL_OK) {
+		if (HAL_SPI_TransmitReceive(&hspi2, misDat[i-1].datos, EPC, 24, 1000) == HAL_OK) {
+//			if (HAL_SPI_TransmitReceive(&hspi2, EPC, 0, 24, 1000) == HAL_OK) {
 //		if (HAL_SPI_Receive(&hspi2, (uint8_t *) EPC, 24, 1000) == HAL_OK) {
 //		if (HAL_SPI_Receive_IT(&hspi2, (uint8_t *) EPC, 24) == HAL_OK) {
-			while (HAL_SPI_GetState(&hspi2) != HAL_SPI_STATE_READY) {}
+			while (HAL_SPI_GetState(&hspi2) != HAL_SPI_STATE_READY) {
+			}
 			PRINTF("%s\r\n", EPC);
 			//PRINTF("%d\r\n", i);
 			strcpy(misDat[i].datos, EPC);
 //			memset(EPC, '\0', EPC);
 			//PRINTF("LISTO\r\n", i);
+//			}
 		}
+//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+//
+//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+//		if (HAL_SPI_TransmitReceive(&hspi2, misDat[i].datos, EPC, 24, 1000) == HAL_OK) {
+//			while (HAL_SPI_GetState(&hspi2) != HAL_SPI_STATE_READY) {
+//			}
+//		}
+//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+//		bzero(EPC, sizeof(EPC));
+
+//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+//		if (HAL_SPI_TransmitReceive(&hspi2, misDat[i].datos, 0, 24, 1000) == HAL_OK) {
+//			PRINTF("Enviado %s\r\n", misDat[i].datos);
+//		}
 //		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 ////		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
 //		if (HAL_SPI_Transmit(&hspi2, misDat[i].datos, 24, 2000) == HAL_OK) {
@@ -348,7 +363,6 @@ int main(void) {
 //			cont = 0;
 //		}
 //		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
-		bzero(EPC, sizeof(EPC));
 
 //		switch (State) {
 //		case RX:
@@ -406,7 +420,7 @@ int main(void) {
 //			break;
 //		}
 		i++;
-		if (i == 149){
+		if (i == 149) {
 			i = 0;
 		}
 
